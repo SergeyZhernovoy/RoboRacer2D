@@ -1,32 +1,101 @@
-# Prerequisites
-*.d
-
 # Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+*/*.slo
+*/*.lo
+*/*.o
+*/*.obj
 
 # Precompiled Headers
 *.gch
 *.pch
+*.ipch
+*.db
 
 # Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+*/*.so
+*/*.dylib
+*/*.dll
 
-# Fortran module files
-*.mod
-*.smod
 
 # Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+*/*.lai
+*/*.la
+*/*.a
+*/*.lib
 
 # Executables
+*/*.exe
+*/*.out
+*/*.app
+
+# Backup/temporary files:
+*/*~
+*/*.bak
+*/.*.swp
+*/*.log
+*/*.out
+
+# Generated binary files:
+*/*.o
+*/*.lo
+*/*.a
+*/*.la
+*/*.gmo
+*/*.pyc
+*/*.wz
+# Doxygen files
+/doc/code/html
+# windows generated binary files:
+*.obj
+*.lib
+*.pdb
 *.exe
-*.out
-*.app
+*.htm
+*.pdb
+*.idb
+*.ilk
+*.res
+*.manifest
+*.ncb
+*.suo
+*.user
+/devpkg/*
+
+
+# Eclipse CDT
+*/.project
+*/.cproject
+*/.settings/
+
+
+#misc (MSVC)
+*/*.orig
+*/*.bak
+*/*.exe
+*/*.obj
+*/*.suo
+*/*.ncb
+*/*.htm
+*/*.mep
+*/*.manifest
+*/*.res
+*/*.idb
+*/*.pdb
+*/*.diff
+*/*.dep
+*/*.user
+*/*.lib
+*/*.dll
+*/*.lastcodeanalysissucceeded
+
+
+*/Debug
+*/.idea
+*/cmake-build-debug
+*/.vs
+*.idb
+*.tlog
+*.enc
+*.pdb
+*.obj
+*.aps
+*.log
