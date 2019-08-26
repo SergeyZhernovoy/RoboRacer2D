@@ -17,6 +17,11 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
+void StartGame();
+void GameLoop();
+void EndGame();
+
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -41,20 +46,31 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_ROBORACER2D));
 
     MSG msg;
-
+	StartGame();
+	bool done = false;
     // Цикл основного сообщения:
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
+    while (!done)
+    {   
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT)
+			{
+				done = true;
+			}
+			else
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		else
+		{
+			GameLoop();
+		}
     }
-
+	EndGame();
     return (int) msg.wParam;
 }
-
 
 
 //
@@ -178,3 +194,12 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return (INT_PTR)FALSE;
 }
+
+void StartGame()
+{}
+
+void GameLoop()
+{}
+
+void EndGame()
+{}
