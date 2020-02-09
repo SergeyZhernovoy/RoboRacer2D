@@ -27,18 +27,9 @@
     <ClInclude Include="RoboRacer2D.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="SOIL.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="Sprite.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RoboRacer2D.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="Sprite.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
