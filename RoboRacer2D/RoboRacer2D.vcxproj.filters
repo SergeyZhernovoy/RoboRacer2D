@@ -27,9 +27,21 @@
     <ClInclude Include="RoboRacer2D.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="SOIL.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="glut.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="Sprite.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RoboRacer2D.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="Sprite.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -43,6 +55,39 @@
       <Filter>Файлы ресурсов</Filter>
     </Image>
     <Image Include="RoboRacer2D.ico">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\background.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\robot_left_00.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\robot_left_01.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\robot_left_02.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\robot_left_03.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\robot_left_strip.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\robot_right_00.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\robot_right_01.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\robot_right_02.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\robot_right_03.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+    <Image Include="resources\robot_right_strip.png">
       <Filter>Файлы ресурсов</Filter>
     </Image>
   </ItemGroup>

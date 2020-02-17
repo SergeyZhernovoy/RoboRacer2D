@@ -30,7 +30,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -94,7 +94,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>OpenGL32.lib;Glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>OpenGL32.lib;Glu32.lib;SOIL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -149,17 +149,32 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="glut.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RoboRacer2D.h" />
+    <ClInclude Include="SOIL.h" />
+    <ClInclude Include="Sprite.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RoboRacer2D.cpp" />
+    <ClCompile Include="Sprite.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="RoboRacer2D.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="resources\background.png" />
+    <Image Include="resources\robot_left_00.png" />
+    <Image Include="resources\robot_left_01.png" />
+    <Image Include="resources\robot_left_02.png" />
+    <Image Include="resources\robot_left_03.png" />
+    <Image Include="resources\robot_left_strip.png" />
+    <Image Include="resources\robot_right_00.png" />
+    <Image Include="resources\robot_right_01.png" />
+    <Image Include="resources\robot_right_02.png" />
+    <Image Include="resources\robot_right_03.png" />
+    <Image Include="resources\robot_right_strip.png" />
     <Image Include="RoboRacer2D.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
