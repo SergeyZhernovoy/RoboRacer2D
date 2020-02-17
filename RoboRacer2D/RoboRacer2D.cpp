@@ -3,8 +3,13 @@
 
 #include "framework.h"
 #include "RoboRacer2D.h"
+#include <Windows.h>
+
 #include <gl\GL.h>
 #include <gl\GLU.h>
+#include "glut.h"
+
+#include "Sprite.h"
 
 #define MAX_LOADSTRING 100
 
@@ -15,24 +20,255 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса глав�
 
 // Отправить объявления функций, включенных в этот модуль кода:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
-BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+
+HDC hDC = NULL;
+HGLRC hRC = NULL;
+HWND hWnd = NULL;
+
+bool fullscreen = false;
+GLfloat screenHeight;
+GLfloat screenWidth;
+
+Sprite* robotLeft;
+Sprite* robotRight;
+Sprite* robotRightStrip;
+Sprite* robotLeftStrip;
+Sprite* background;
+Sprite* player;
+
+void ReSizeGLScene(const GLsizei width, const GLsizei height)
+{
+	GLsizei h = height;
+	GLsizei w = width;
+	if (h == 0) h = 1;
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, w, h, 0, 0, 1);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+}
+
+const bool InitGL()
+{
+	glEnable(GL_TEXTURE_2D);
+	glShadeModel(GL_SMOOTH);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
+	glDisable(GL_DEPTH_TEST);
+	return true;
+}
+
+const bool LoadTextures()
+{
+    background = new Sprite(1);
+    background->SetFrameSize(1877.0f, 600.0f);
+    background->SetNumberOfFrames(1);
+    background->AddTexture("resources/background.png", false);
+   
+    robotLeft = new Sprite(4);
+    robotLeft->SetFrameSize(100.0f, 125.0f);
+    robotLeft->SetNumberOfFrames(4);
+    robotLeft->SetPosition(0, screenHeight - 130.0f);
+    robotLeft->AddTexture("resources/robot_left_00.png");
+    robotLeft->AddTexture("resources/robot_left_01.png");
+    robotLeft->AddTexture("resources/robot_left_02.png");
+    robotLeft->AddTexture("resources/robot_left_03.png");
+
+    robotRight = new Sprite(4);
+    robotRight->SetFrameSize(100.0f, 125.0f);
+    robotRight->SetNumberOfFrames(4);
+    robotRight->SetPosition(0, screenHeight - 130.0f);
+    robotRight->AddTexture("resources/robot_right_00.png");
+    robotRight->AddTexture("resources/robot_right_01.png");
+    robotRight->AddTexture("resources/robot_right_02.png");
+    robotRight->AddTexture("resources/robot_right_03.png");
+
+    robotRightStrip = new Sprite(1);
+    robotRightStrip->SetFrameSize(125.0f, 100.0f);
+    robotRightStrip->SetNumberOfFrames(1);
+    robotRightStrip->SetPosition(0, screenHeight - 130.0f);
+    robotRightStrip->AddTexture("resources/robot_right_strip.png");
+
+    robotLeftStrip = new Sprite(1);
+    robotLeftStrip->SetFrameSize(125.0f, 100.0f);
+    robotLeftStrip->SetNumberOfFrames(1);
+    robotLeftStrip->SetPosition(0, screenHeight - 130.0f);
+    robotLeftStrip->AddTexture("resources/robot_left_strip.png");
+
+	background->SetVisible(true);
+	background->SetActive(true);
+	background->SetVelocity(-50.0f);
+
+    robotRight->SetActive(true);
+    robotRight->SetVisible(true);
+    robotRight->SetVelocity(50.0f);
+
+    player = robotRight;
+	player->SetActive(true);
+    player->SetVisible(true);
+    player->SetVelocity(50.0f);
+
+    return true;
+}
+
+void Render()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLoadIdentity();
+
+    background->Render();
+    robotLeft->Render();
+    robotRight->Render();
+    robotLeftStrip->Render();
+    robotRightStrip->Render();
+
+    SwapBuffers(hDC);
+}
 
 void StartGame()
 {
-
+    LoadTextures();
 }
 
-void GameLoop()
-{
 
+void Update(const float deltaTime)
+{
+    background->Update(deltaTime);
+    robotLeft->Update(deltaTime);
+    robotRight->Update(deltaTime);
+    robotLeftStrip->Update(deltaTime);
+    robotRightStrip->Update(deltaTime);
+}
+
+void GameLoop(const float deltaTime)
+{
+    Update(deltaTime);
+    Render();
 }
 
 void EndGame()
-{
+{}
 
+const bool CreateGLWindow(const char* p_title, const int p_width, const int p_height, const int p_bits, const bool p_fullscreenflag)
+{
+	GLuint		PixelFormat;
+	WNDCLASS	wc;
+	DWORD		dwExStyle;
+	DWORD		dwStyle;
+	RECT		WindowRect;
+	WindowRect.left = (long)0;
+	WindowRect.right = (long)p_width;
+	WindowRect.top = (long)0;
+	WindowRect.bottom = (long)p_height;
+	fullscreen = p_fullscreenflag;
+	screenHeight = (GLfloat)p_height;
+	screenWidth = (GLfloat)p_width;
+	hInst = GetModuleHandle(NULL);
+	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	wc.lpfnWndProc = (WNDPROC)WndProc;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = hInst;
+	wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = NULL;
+	wc.lpszMenuName = NULL;
+	wc.lpszClassName = "OpenGL";
+	if (!RegisterClass(&wc))
+	{
+		return false;
+	}
+	if (fullscreen)
+	{
+		DEVMODE dmScreenSettings;
+		memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
+		dmScreenSettings.dmSize = sizeof(dmScreenSettings);
+		dmScreenSettings.dmPelsWidth = p_width;
+		dmScreenSettings.dmPelsHeight = p_height;
+		dmScreenSettings.dmBitsPerPel = p_bits;
+		dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+
+		if (ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
+		{
+			fullscreen = false;
+		}
+	}
+	if (fullscreen)
+	{
+		dwExStyle = WS_EX_APPWINDOW;
+		dwStyle = WS_POPUP;
+		ShowCursor(false);
+	}
+	else
+	{
+		dwExStyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
+		dwStyle = WS_OVERLAPPEDWINDOW;
+	}
+	AdjustWindowRectEx(&WindowRect, dwStyle, FALSE, dwExStyle);
+
+	if (!(hWnd = CreateWindowEx(dwExStyle,
+        "OpenGL",
+		p_title,
+		dwStyle |
+		WS_CLIPSIBLINGS |
+		WS_CLIPCHILDREN,
+		0, 0,
+		WindowRect.right - WindowRect.left,
+		WindowRect.bottom - WindowRect.top,
+		NULL,
+		NULL,
+		hInst,
+		NULL)))
+	{
+		return false;
+	}
+	static	PIXELFORMATDESCRIPTOR pfd =
+	{
+		sizeof(PIXELFORMATDESCRIPTOR),
+		1,
+		PFD_DRAW_TO_WINDOW |
+		PFD_SUPPORT_OPENGL |
+		PFD_DOUBLEBUFFER,
+		PFD_TYPE_RGBA,
+		p_bits,
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0,
+		16, 0, 0,
+		PFD_MAIN_PLANE,
+		0, 0, 0, 0
+	};
+	if (!(hDC = GetDC(hWnd)))
+	{
+		return false;
+	}
+	if (!(PixelFormat = ChoosePixelFormat(hDC, &pfd)))
+	{
+		return false;
+	}
+	if (!SetPixelFormat(hDC, PixelFormat, &pfd))
+	{
+		return false;
+	}
+	if (!(hRC = wglCreateContext(hDC)))
+	{
+		return false;
+	}
+	if (!wglMakeCurrent(hDC, hRC))
+	{
+		return false;
+	}
+	ShowWindow(hWnd, SW_SHOW);
+	SetForegroundWindow(hWnd);
+	SetFocus(hWnd);
+	ReSizeGLScene(p_width, p_height);
+	if (!InitGL())
+	{
+		return false;
+	}
+	return true;
 }
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -49,18 +285,18 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LoadStringW(hInstance, IDC_ROBORACER2D, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
-    // Выполнить инициализацию приложения:
-    if (!InitInstance (hInstance, nCmdShow))
+    if (!CreateGLWindow("RoboRacer 2D",800, 600, 16, false))
     {
-        return FALSE;
+        return false;
     }
+
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_ROBORACER2D));
 
     MSG msg;
 
-    // Цикл основного сообщения:
     StartGame();
+    int previousTime = glutGet(GLUT_ELAPSED_TIME);
     bool done = false;
     while (!done) 
     {
@@ -78,14 +314,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
 		else
 		{
-			GameLoop();
+            int currentTime = glutGet(GLUT_ELAPSED_TIME);
+            float deltaTime = (float)(currentTime - previousTime) / 1000;
+            previousTime = currentTime;
+			GameLoop(deltaTime);
 		}
     }
     EndGame();
     
     return (int) msg.wParam;
 }
-
 
 //
 //  ФУНКЦИЯ: MyRegisterClass()
@@ -114,34 +352,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 }
 
 //
-//   ФУНКЦИЯ: InitInstance(HINSTANCE, int)
-//
-//   ЦЕЛЬ: Сохраняет маркер экземпляра и создает главное окно
-//
-//   КОММЕНТАРИИ:
-//
-//        В этой функции маркер экземпляра сохраняется в глобальной переменной, а также
-//        создается и выводится главное окно программы.
-//
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-{
-   hInst = hInstance; // Сохранить маркер экземпляра в глобальной переменной
-
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-
-   if (!hWnd)
-   {
-      return FALSE;
-   }
-
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
-
-   return TRUE;
-}
-
-//
 //  ФУНКЦИЯ: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
 //  ЦЕЛЬ: Обрабатывает сообщения в главном окне.
@@ -161,9 +371,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // Разобрать выбор в меню:
             switch (wmId)
             {
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
@@ -189,22 +396,3 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-// Обработчик сообщений для окна "О программе".
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
-    }
-    return (INT_PTR)FALSE;
-}
