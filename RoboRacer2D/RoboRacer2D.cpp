@@ -10,6 +10,7 @@
 #include "glut.h"
 
 #include "Sprite.h"
+#include "Input.h"
 
 #define MAX_LOADSTRING 100
 
@@ -36,6 +37,10 @@ Sprite* robotRightStrip;
 Sprite* robotLeftStrip;
 Sprite* background;
 Sprite* player;
+Sprite* pauseButton;
+Sprite* resumeButton;
+
+Input* inputManager;
 
 void ReSizeGLScene(const GLsizei width, const GLsizei height)
 {
@@ -96,9 +101,28 @@ const bool LoadTextures()
     robotLeftStrip->SetPosition(0, screenHeight - 130.0f);
     robotLeftStrip->AddTexture("resources/robot_left_strip.png");
 
+	pauseButton = new Sprite(1);
+	pauseButton->SetFrameSize(75.0f, 38.0f);
+	pauseButton->SetNumberOfFrames(1);
+	pauseButton->SetPosition(5.0f, 5.0f);
+	pauseButton->AddTexture("resources/pauseButton.png");
+	pauseButton->SetActive(true);
+	pauseButton->SetVisible(true);
+
+	resumeButton = new Sprite(1);
+	resumeButton->SetFrameSize(75.0f, 38.0f);
+	resumeButton->SetNumberOfFrames(1);
+	resumeButton->SetPosition(80.0f, 5.0f);
+	resumeButton->AddTexture("resources/resumeButton.png");
+	resumeButton->SetActive(true);
+	resumeButton->SetVisible(true);
+
+	inputManager->AddUIElement(resumeButton);
+	inputManager->AddUIElement(pauseButton);
+
 	background->SetVisible(true);
 	background->SetActive(true);
-	background->SetVelocity(-50.0f);
+	
 
     robotRight->SetActive(true);
     robotRight->SetVisible(true);
@@ -107,8 +131,7 @@ const bool LoadTextures()
     player = robotRight;
 	player->SetActive(true);
     player->SetVisible(true);
-    player->SetVelocity(50.0f);
-
+    
     return true;
 }
 
@@ -122,23 +145,79 @@ void Render()
     robotRight->Render();
     robotLeftStrip->Render();
     robotRightStrip->Render();
+	pauseButton->Render();
+	resumeButton->Render();
 
     SwapBuffers(hDC);
 }
 
 void StartGame()
 {
+    inputManager = new Input(hWnd);
     LoadTextures();
+}
+
+void ProcessInput(const float deltaTime)
+{
+    switch (inputManager->GetCommand())
+    {
+        case Input::Command::CM_STOP:
+            player->SetVelocity(0.0f);
+            background->SetVelocity(0.0f);
+            break;
+		case Input::Command::CM_LEFT:
+
+			if (player == robotRight)
+			{
+				robotRight->SetActive(false);
+				robotRight->SetVisible(false);
+				robotRight->SetPosition(robotRight->GetPosition());
+			}
+
+			player = robotLeft;
+			player->SetActive(true);
+			player->SetVisible(true);
+			player->SetVelocity(-50.0f);
+			background->SetVelocity(50.0f);
+			break;
+		case Input::Command::CM_RIGHT:
+			if (player == robotLeft)
+			{
+				robotLeft->SetActive(false);
+				robotLeft->SetVisible(false);
+				robotLeft->SetPosition(robotLeft->GetPosition());
+			}
+
+			player = robotRight;
+			player->SetActive(true);
+			player->SetVisible(true);
+			player->SetVelocity(50.0f);
+			background->SetVelocity(-50.0f);
+			break;
+		case Input::Command::CM_UP:
+			player->Jump(Sprite::SpriteState::UP);
+			break;
+		case Input::Command::CM_DOWN:
+			player->Jump(Sprite::SpriteState::DOWN);
+			break;
+		case Input::Command::CM_QUIT:
+			PostQuitMessage(0);
+			break;
+    }
 }
 
 
 void Update(const float deltaTime)
 {
+    inputManager->Update(deltaTime);
+    ProcessInput(deltaTime);
     background->Update(deltaTime);
     robotLeft->Update(deltaTime);
     robotRight->Update(deltaTime);
     robotLeftStrip->Update(deltaTime);
     robotRightStrip->Update(deltaTime);
+	pauseButton->Update(deltaTime);
+	resumeButton->Update(deltaTime);
 }
 
 void GameLoop(const float deltaTime)
