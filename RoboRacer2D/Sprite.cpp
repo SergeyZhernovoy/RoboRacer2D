@@ -21,6 +21,7 @@ Sprite::Sprite(const GLuint numberTextures)
 	active = false;
 	spriteSheet = false;
 	transparency = true;
+	clicked = false;
 }
 
 Sprite::~Sprite()
@@ -133,6 +134,19 @@ const GLuint Sprite::GetCurrentFrame()
 	{
 		return textures[currentFrame];
 	}
+}
+
+void Sprite::Jump(SpriteState state)
+{
+	if (state == SpriteState::DOWN)
+	{
+		if (position.y < 470.0f) position.y += 75.0f;
+	} 
+	else if (state == SpriteState::UP)
+	{
+		if (position.y >= 470.0f) position.y -= 75.0f;
+	}
+
 }
 
 

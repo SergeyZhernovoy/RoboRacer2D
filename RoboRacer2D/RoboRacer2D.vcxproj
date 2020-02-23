@@ -150,6 +150,7 @@
   <ItemGroup>
     <ClInclude Include="framework.h" />
     <ClInclude Include="glut.h" />
+    <ClInclude Include="Input.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RoboRacer2D.h" />
     <ClInclude Include="SOIL.h" />
@@ -157,6 +158,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Input.cpp" />
     <ClCompile Include="RoboRacer2D.cpp" />
     <ClCompile Include="Sprite.cpp" />
   </ItemGroup>

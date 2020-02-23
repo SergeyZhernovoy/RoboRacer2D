@@ -25,6 +25,12 @@ public:
 		GLfloat right;
 	};
 
+	enum SpriteState
+	{
+		UP,
+		DOWN
+	};
+
 protected:
 
 	GLuint* textures;
@@ -46,6 +52,7 @@ protected:
 	bool active;
 	bool transparency;
 	bool spriteSheet;
+	bool clicked;
 
 public:
 
@@ -59,6 +66,8 @@ public:
 	const GLuint GetCurrentFrame();
 
 	void SetPosition(const GLfloat x, const GLfloat y) { position.x = x; position.y = y; }
+	void SetPosition(const Point position) { this->position = position; }
+
 	const Point GetPosition() const { return position; }
 
 	const Size GetSize() const { return size; }
@@ -86,5 +95,8 @@ public:
 
 	void UseTransparency(const bool value) { transparency = value; }
 		  
+	void Jump(SpriteState state);
+	void SetClicked(const bool value) { clicked = value; }
+	const bool GetClicked() const { return clicked; }
 }; 
 
