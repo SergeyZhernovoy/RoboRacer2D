@@ -162,7 +162,7 @@ void Render()
 
 void StartGame()
 {
-	gameState = GS_Runnig;
+	gameState = GameState::GS_Runnig;
 	uiTimer = .0f;
     inputManager = new Input(hWnd);
     LoadTextures();
@@ -254,11 +254,8 @@ void ProcessInput(const float deltaTime)
 				}
 			}
 	}
-
-
-  
+	   
 }
-
 
 void Update(const float deltaTime)
 {
