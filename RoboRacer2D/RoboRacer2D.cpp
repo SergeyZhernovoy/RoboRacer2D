@@ -46,6 +46,7 @@ Sprite* resumeButton;
 Sprite* playButton;
 Sprite* creditsButton;
 Sprite* exitButton;
+Sprite* replayButton;
 
 Sprite* pickup;
 Sprite* enemy;
@@ -53,6 +54,9 @@ Sprite* splashScreen;
 Sprite* menuScreen;
 Sprite* creditsScreen;
 Sprite* menuButton;
+Sprite* continueButton;
+Sprite* nextLevelScreen;
+Sprite* gameOverScreen;
 
 Input* inputManager;
 
@@ -64,6 +68,13 @@ float enemySpawnThreshold;
 float enemySpawnTimer;
 float splashDisplayTimer;
 float splashDisplayThreshold;
+
+float levelTimer;
+float levelMaxTime;
+float pickupSpawnAdjustment;
+int pickupsReceived;
+int pickupsThreshold;
+int enemiesHit;
 
 GLuint fontBase;
 
@@ -130,6 +141,33 @@ const bool InitGL()
 	return true;
 }
 
+void RestartGame()
+{
+	player->SetValue(0);
+	robotRight->SetValue(0);
+	robotLeft->SetValue(0);
+	pickupSpawnThreshold = 5.0f;
+	pickupSpawnTimer = 0.0f;
+	enemySpawnThreshold = 7.0f;
+	enemySpawnTimer = 0.0f;
+	splashDisplayTimer = 0.0f;
+	splashDisplayThreshold = 5.0f;
+	levelTimer = 0.0f;
+	pickupsReceived = 0;
+	pickupsThreshold = 5;
+	pickupsReceived = 0;
+	pickup->SetVisible(false);
+	enemy->SetVisible(false);
+	background->SetVelocity(0.0f);
+	robotLeft->SetPosition(screenWidth / 2.0f - 50.0f, screenHeight - 130.0f);
+	robotLeft->SetVisible(false);
+	robotRight->SetPosition(screenWidth / 2.0f - 50.0f, screenHeight - 130.0f);
+	player = robotRight;
+	player->SetActive(true);
+	player->SetVisible(true);
+	player->SetVelocity(0.0f);
+}
+
 void LoadSplashScreen()
 {
 	splashScreen = new Sprite(1);
@@ -156,6 +194,20 @@ const bool LoadTextures()
 	menuScreen->AddTexture("resources/mainmenu.png", false);
 	menuScreen->SetActive(true);
 	menuScreen->SetVisible(true);
+
+	gameOverScreen = new Sprite(1);
+	gameOverScreen->SetFrameSize(800.0f, 600.0f);
+	gameOverScreen->SetNumberOfFrames(1);
+	gameOverScreen->AddTexture("resources/gameover.png", false);
+	gameOverScreen->SetActive(true);
+	gameOverScreen->SetVisible(true);
+
+	nextLevelScreen = new Sprite(1);
+	nextLevelScreen->SetFrameSize(800.0f, 600.0f);
+	nextLevelScreen->SetNumberOfFrames(1);
+	nextLevelScreen->AddTexture("resources/level.png", false);
+	nextLevelScreen->SetActive(true);
+	nextLevelScreen->SetVisible(true);
    
     robotLeft = new Sprite(4);
     robotLeft->SetFrameSize(100.0f, 125.0f);
@@ -236,6 +288,24 @@ const bool LoadTextures()
 	menuButton->SetVisible(true);
 	menuButton->SetActive(false);
 	inputManager->AddUIElement(menuButton);
+
+	continueButton = new Sprite(1);
+	continueButton->SetFrameSize(75.0f, 38.0f);
+	continueButton->SetNumberOfFrames(1);
+	continueButton->SetPosition(390.0f, 400.0f);
+	continueButton->AddTexture("resources/continueButton.png");
+	continueButton->SetVisible(true);
+	continueButton->SetActive(false);
+	inputManager->AddUIElement(continueButton);
+
+	replayButton = new Sprite(1);
+	replayButton->SetFrameSize(75.0f, 38.0f);
+	replayButton->SetNumberOfFrames(1);
+	replayButton->SetPosition(390.0f, 400.0f);
+	replayButton->AddTexture("resources/replayButton.png");
+	replayButton->SetVisible(true);
+	replayButton->SetActive(false);
+	inputManager->AddUIElement(replayButton);
 
 	pickup = new Sprite(1);
 	pickup->SetFrameSize(26.0f, 50.0f);
@@ -337,6 +407,19 @@ void DrawScore()
 	DrawText(score, 350.0f, 25.0f, 0.0f, 0.0f, 1.0f);
 }
 
+void DrawStats()
+{
+	char pickupsStat[50];
+	char enemiesStat[50];
+	char score[50];
+	sprintf_s(pickupsStat, 50, "Enemies Hit: %i", enemiesHit);
+	sprintf_s(enemiesStat, 50, "Pickups: %i", pickupsReceived);
+	sprintf_s(score, 50, "Score: %i", player->GetValue());
+	DrawText(enemiesStat, 350.0f, 270.0f, 0.0f, 0.0f, 1.0f);
+	DrawText(pickupsStat, 350.0f, 320.0f, 0.0f, 0.0f, 1.0f);
+	DrawText(score, 350.0f, 370.0f, 0.0f, 0.0f, 1.0f);
+}
+
 void Render()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -372,8 +455,14 @@ void Render()
 		DrawScore();
 		break;
 	case GS_NextLevel:
+		nextLevelScreen->Render();
+		DrawStats();
+		continueButton->Render();
 		break;
 	case GS_GameOver:
+		gameOverScreen->Render();
+		replayButton->Render();
+		DrawStats();
 		break;
 	}
     SwapBuffers(hDC);
@@ -428,6 +517,27 @@ void StartGame()
 	pickupSpawnTimer = 0.0f;
 	enemySpawnThreshold = 7.0f;
 	enemySpawnTimer = 0.0f;
+
+	levelTimer = 0.0f;
+	levelMaxTime = 30.0f;
+	pickupSpawnAdjustment = 0.25f;
+	pickupsReceived = 0;
+	pickupsThreshold = 5;
+	enemiesHit = 0;
+}
+
+void NextLevel()
+{
+	if (pickupsReceived < pickupsThreshold)
+	{
+		gameState = GameState::GS_GameOver;
+	}
+	else
+	{
+		pickupSpawnThreshold += pickupSpawnAdjustment;
+		levelTimer = 0.0f;
+		gameState = GameState::GS_NextLevel;
+	}
 }
 
 void CheckCollisions()
@@ -438,6 +548,7 @@ void CheckCollisions()
 		pickup->SetActive(false);
 		player->SetValue(player->GetValue() + pickup->GetValue());
 		pickupSpawnThreshold = 0.0f;
+		pickupsReceived++;
 	}
 
 	if (player->IntersectRect(enemy))
@@ -446,8 +557,8 @@ void CheckCollisions()
 		enemy->SetActive(false);
 		player->SetValue(player->GetValue() + enemy->GetValue());
 		enemySpawnTimer = 0.0f;
+		enemiesHit++;
 	}
-
 }
 
 void CheckBackground()
@@ -643,9 +754,25 @@ void ProcessInput(const float deltaTime)
 					gameState = GameState::GS_Menu;
 				}
 
+				if (continueButton->GetClicked())
+				{
+					continueButton->SetClicked(false);
+					continueButton->SetActive(false);
+					gameState = GameState::GS_Running;
+					pickupsReceived = 0;
+					enemiesHit = 0;
+				}
+
+				if (replayButton->GetClicked())
+				{
+					replayButton->SetClicked(false);
+					replayButton->SetActive(false);
+					exitButton->SetActive(false);
+					RestartGame();
+					gameState = GameState::GS_Running;
+				}
 			}
 	}
-	   
 }
 
 void Update(const float deltaTime)
@@ -700,8 +827,18 @@ void Update(const float deltaTime)
 			enemy->Update(deltaTime);
 			SpawnEnemy(deltaTime);
 			CheckCollisions();
+
+			levelTimer += deltaTime;
+			if (levelTimer > levelMaxTime)
+			{
+				NextLevel();
+			}
+
 			break;
 		case GS_NextLevel:
+			nextLevelScreen->Update(deltaTime);
+			continueButton->SetActive(true);
+			continueButton->Update(deltaTime);
 			inputManager->Update(deltaTime);
 			ProcessInput(deltaTime);
 			break;
@@ -710,6 +847,11 @@ void Update(const float deltaTime)
 			ProcessInput(deltaTime);
 			break;
 		case GS_GameOver:
+			gameOverScreen->Update(deltaTime);
+			replayButton->SetActive(true);
+			replayButton->Update(deltaTime);
+			exitButton->SetActive(true);
+			exitButton->Update(deltaTime);
 			inputManager->Update(deltaTime);
 			ProcessInput(deltaTime);
 			break;
