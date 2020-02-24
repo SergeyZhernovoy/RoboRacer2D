@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdio.h>
 
 #include <gl\GL.h>
 #include <gl\GLU.h>
@@ -64,6 +65,8 @@ float enemySpawnTimer;
 float splashDisplayTimer;
 float splashDisplayThreshold;
 
+GLuint fontBase;
+
 enum GameState
 {
 	GS_Splash,
@@ -75,6 +78,36 @@ enum GameState
 	GS_Paused,
 	GS_GameOver
 } gameState;
+
+GLvoid BuildFont(GLvoid)
+{
+	HFONT newFont;
+	HFONT tempFont;
+	fontBase = glGenLists(96);
+	tempFont = CreateFont(-26, // Height
+		0, // Width
+		0, // Escapement
+		0, // Orientation
+		FW_BOLD, // Weight
+		FALSE, // Italic
+		FALSE, // Underline
+		FALSE, // Strikeout
+		ANSI_CHARSET, // Character Set
+		OUT_TT_PRECIS, // Output Precision
+		CLIP_DEFAULT_PRECIS, // Clipping Precision
+		ANTIALIASED_QUALITY,// Output Quality
+		FF_DONTCARE | DEFAULT_PITCH, // Family/Pitch
+		"Courier New"); // Font Name
+	newFont = (HFONT)SelectObject(hDC, tempFont);
+	wglUseFontBitmaps(hDC, 32, 96, fontBase);
+	SelectObject(hDC, newFont);
+	DeleteObject(tempFont);
+}
+
+GLvoid KillFont(GLvoid)
+{
+	glDeleteLists(fontBase, 96);
+}
 
 void ReSizeGLScene(const GLsizei width, const GLsizei height)
 {
@@ -273,9 +306,35 @@ const bool LoadTextures()
     return true;
 }
 
+void DrawText(const char* text, const float x, const float y, const float r, const float g, const float b)
+{
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glColor3f(r, g, b);
+	glRasterPos2f(x, y);
+	if (text != NULL)
+	{
+		glPushAttrib(GL_LIST_BIT);
+		glListBase(fontBase - 32);
+		glCallLists(strlen(text), GL_UNSIGNED_BYTE, text);
+		glPopAttrib();
+	}
+	glColor3f(1.0f, 1.0f, 1.0f);
+}
+
+void DrawCredits()
+{
+	float startX = 325.0f;
+	float startY = 250.0f;
+	float spaceY = 30.0f;
+	DrawText("Sergey Zhernovoy", startX, startY, 0.0f, 0.0f, 1.0f);
+	DrawText("Author", startX, startY + spaceY, 0.0f, 0.0f, 1.0f);
+}
+
 void DrawScore()
 {
-
+	char score[50];
+	sprintf_s(score, 50, "Score: %i", player->GetValue());
+	DrawText(score, 350.0f, 25.0f, 0.0f, 0.0f, 1.0f);
 }
 
 void Render()
@@ -661,6 +720,7 @@ void GameLoop(const float deltaTime)
 {
 	if (gameState == GameState::GS_Splash)
 	{
+		BuildFont();
 		LoadTextures();
 		gameState = GameState::GS_Loading;
 	}
