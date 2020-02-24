@@ -39,11 +39,19 @@ Sprite* robotRightStrip;
 Sprite* robotLeftStrip;
 Sprite* background;
 Sprite* player;
+
 Sprite* pauseButton;
 Sprite* resumeButton;
+Sprite* playButton;
+Sprite* creditsButton;
+Sprite* exitButton;
 
 Sprite* pickup;
 Sprite* enemy;
+Sprite* splashScreen;
+Sprite* menuScreen;
+Sprite* creditsScreen;
+Sprite* menuButton;
 
 Input* inputManager;
 
@@ -53,11 +61,19 @@ float pickupSpawnThreshold;
 float pickupSpawnTimer;
 float enemySpawnThreshold;
 float enemySpawnTimer;
+float splashDisplayTimer;
+float splashDisplayThreshold;
 
 enum GameState
 {
-	GS_Runnig,
-	GS_Paused
+	GS_Splash,
+	GS_Loading,
+	GS_Menu,
+	GS_Credits,
+	GS_Running,
+	GS_NextLevel,
+	GS_Paused,
+	GS_GameOver
 } gameState;
 
 void ReSizeGLScene(const GLsizei width, const GLsizei height)
@@ -81,6 +97,16 @@ const bool InitGL()
 	return true;
 }
 
+void LoadSplashScreen()
+{
+	splashScreen = new Sprite(1);
+	splashScreen->SetFrameSize(1800.0f, 600.0f);
+	splashScreen->SetNumberOfFrames(1);
+	splashScreen->AddTexture("resources/splash_screen.png");
+	splashScreen->SetActive(true);
+	splashScreen->SetVisible(true);
+}
+
 const bool LoadTextures()
 {
 	Sprite::Point center;
@@ -90,6 +116,13 @@ const bool LoadTextures()
     background->SetFrameSize(1877.0f, 600.0f);
     background->SetNumberOfFrames(1);
     background->AddTexture("resources/background.png", false);
+
+	menuScreen = new Sprite(1);
+	menuScreen->SetFrameSize(800.0f, 600.0f);
+	menuScreen->SetNumberOfFrames(1);
+	menuScreen->AddTexture("resources/mainmenu.png", false);
+	menuScreen->SetActive(true);
+	menuScreen->SetVisible(true);
    
     robotLeft = new Sprite(4);
     robotLeft->SetFrameSize(100.0f, 125.0f);
@@ -135,6 +168,42 @@ const bool LoadTextures()
 	resumeButton->SetPosition(80.0f, 5.0f);
 	resumeButton->AddTexture("resources/resumeButton.png");
 
+	playButton = new Sprite(1);
+	playButton->SetFrameSize(75.0f, 38.0f);
+	playButton->SetNumberOfFrames(1);
+	playButton->SetPosition(390.0f, 300.0f);
+	playButton->AddTexture("resources/playButton.png");
+	playButton->SetVisible(true);
+	playButton->SetActive(false);
+	inputManager->AddUIElement(playButton);
+
+	creditsButton = new Sprite(1);
+	creditsButton->SetFrameSize(75.0f, 38.0f);
+	creditsButton->SetNumberOfFrames(1);
+	creditsButton->SetPosition(390.0f, 350.0f);
+	creditsButton->AddTexture("resources/creditsButton.png");
+	creditsButton->SetVisible(true);
+	creditsButton->SetActive(false);
+	inputManager->AddUIElement(creditsButton);
+
+	exitButton = new Sprite(1);
+	exitButton->SetFrameSize(75.0f, 38.0f);
+	exitButton->SetNumberOfFrames(1);
+	exitButton->SetPosition(390.0f, 500.0f);
+	exitButton->AddTexture("resources/exitButton.png");
+	exitButton->SetVisible(true);
+	exitButton->SetActive(false);
+	inputManager->AddUIElement(exitButton);
+
+	menuButton = new Sprite(1);
+	menuButton->SetFrameSize(75.0f, 38.0f);
+	menuButton->SetNumberOfFrames(1);
+	menuButton->SetPosition(390.0f, 400.0f);
+	menuButton->AddTexture("resources/menuButton.png");
+	menuButton->SetVisible(true);
+	menuButton->SetActive(false);
+	inputManager->AddUIElement(menuButton);
+
 	pickup = new Sprite(1);
 	pickup->SetFrameSize(26.0f, 50.0f);
 	pickup->SetNumberOfFrames(1);
@@ -150,6 +219,13 @@ const bool LoadTextures()
 	enemy->SetVisible(false);
 	enemy->SetActive(false);
 	enemy->SetValue(-50);
+
+	creditsScreen = new Sprite(1);
+	creditsScreen->SetFrameSize(800.0f, 600.0f);
+	creditsScreen->SetNumberOfFrames(1);
+	creditsScreen->AddTexture("resources/credits.png", false);
+	creditsScreen->SetActive(false);
+	creditsScreen->SetVisible(true);
 
 	inputManager->AddUIElement(resumeButton);
 	inputManager->AddUIElement(pauseButton);
@@ -197,20 +273,50 @@ const bool LoadTextures()
     return true;
 }
 
+void DrawScore()
+{
+
+}
+
 void Render()
 {
-    glClear(GL_COLOR_BUFFER_BIT);
-    glLoadIdentity();
+	glClear(GL_COLOR_BUFFER_BIT);
+	glLoadIdentity();
 
-    background->Render();
-    robotLeft->Render();
-    robotRight->Render();
-    robotLeftStrip->Render();
-    robotRightStrip->Render();
-	pauseButton->Render();
-	resumeButton->Render();
-	pickup->Render();
-	enemy->Render();
+	switch (gameState)
+	{
+	case GS_Splash:
+	case GS_Loading:
+		splashScreen->Render();
+		break;
+	case GS_Menu:
+		menuScreen->Render();
+		playButton->Render();
+		creditsButton->Render();
+		exitButton->Render();
+		break;
+	case GS_Credits:
+		creditsScreen->Render();
+		menuButton->Render();
+		break;
+	case GS_Running:
+	case GS_Paused:
+		background->Render();
+		robotLeft->Render();
+		robotRight->Render();
+		robotLeftStrip->Render();
+		robotRightStrip->Render();
+		pauseButton->Render();
+		resumeButton->Render();
+		pickup->Render();
+		enemy->Render();
+		DrawScore();
+		break;
+	case GS_NextLevel:
+		break;
+	case GS_GameOver:
+		break;
+	}
     SwapBuffers(hDC);
 }
 
@@ -253,11 +359,12 @@ void SpawnEnemy(float deltaTime)
 
 void StartGame()
 {
-	gameState = GameState::GS_Runnig;
+	LoadSplashScreen();
+	inputManager = new Input(hWnd);
+
 	uiTimer = .0f;
-    inputManager = new Input(hWnd);
-    LoadTextures();
 	srand(time(NULL));
+
 	pickupSpawnThreshold  = 15.0f;
 	pickupSpawnTimer = 0.0f;
 	enemySpawnThreshold = 7.0f;
@@ -350,11 +457,23 @@ void ProcessInput(const float deltaTime)
 {
 	Input::Command command = inputManager->GetCommand();
 
-	if (gameState == GS_Paused) 
-	{ 
-		command = Input::Command::CM_UI; 
+	switch (gameState)
+	{
+		case GameState::GS_Splash:
+		case GameState::GS_Loading:
+			return;
+			break;
+		case GameState::GS_Menu:
+		case GameState::GS_Credits:
+		case GameState::GS_Paused:
+		case GameState::GS_NextLevel:
+		case GameState::GS_GameOver:
+	 		command = Input::Command::CM_UI;
+			break;
+		case GameState::GS_Running:
+			break;
 	}
-		
+
 	uiTimer += deltaTime;
 	if (uiTimer > UI_THRESHOLD)
 	{
@@ -409,6 +528,7 @@ void ProcessInput(const float deltaTime)
 				PostQuitMessage(0);
 				break;
 			case Input::Command::CM_UI:
+
 				if (pauseButton->GetClicked())
 				{
 					pauseButton->SetClicked(false);
@@ -425,11 +545,45 @@ void ProcessInput(const float deltaTime)
 					resumeButton->SetClicked(false);
 					resumeButton->SetVisible(false);
 					resumeButton->SetActive(false);
-
 					pauseButton->SetVisible(true);
 					pauseButton->SetActive(true);
-					gameState = GS_Runnig;
+					gameState = GS_Running;
 				}
+
+				if (playButton->GetClicked())
+				{
+					playButton->SetClicked(false);
+					exitButton->SetActive(false);
+					playButton->SetActive(false);
+					creditsButton->SetActive(false);
+					gameState = GameState::GS_Running;
+				}
+
+				if (creditsButton->GetClicked())
+				{
+					creditsButton->SetClicked(false);
+					exitButton->SetActive(false);
+					playButton->SetActive(false);
+					creditsButton->SetActive(false);
+					gameState = GameState::GS_Credits;
+				}
+
+				if (exitButton->GetClicked())
+				{
+					playButton->SetClicked(false);
+					exitButton->SetActive(false);
+					playButton->SetActive(false);
+					creditsButton->SetActive(false);
+					PostQuitMessage(0);
+				}
+
+				if (menuButton->GetClicked())
+				{
+					menuButton->SetClicked(false);
+					menuButton->SetActive(false);
+					gameState = GameState::GS_Menu;
+				}
+
 			}
 	}
 	   
@@ -437,33 +591,79 @@ void ProcessInput(const float deltaTime)
 
 void Update(const float deltaTime)
 {
-    inputManager->Update(deltaTime);
-    ProcessInput(deltaTime);
-	CheckBoundries(player);
-	CheckBackground();
-	if (gameState == GS_Runnig)
+	switch (gameState)
 	{
-		background->Update(deltaTime);
-		robotLeft->Update(deltaTime);
-		robotRight->Update(deltaTime);
-		robotLeftStrip->Update(deltaTime);
-		robotRightStrip->Update(deltaTime);
+		case GS_Splash:
+		case GS_Loading:
+			splashScreen->Update(deltaTime);
+			splashDisplayTimer += deltaTime;
+			
+			if (splashDisplayTimer > splashDisplayThreshold)
+			{
+				gameState = GameState::GS_Menu;
+			}
+			break;
+		case GS_Menu:
+			menuScreen->Update(deltaTime);
 
-		pauseButton->Update(deltaTime);
-		resumeButton->Update(deltaTime);
+			playButton->SetActive(true);
+			creditsButton->SetActive(true);
+			exitButton->SetActive(true);
 
-		pickup->Update(deltaTime);
-		SpawnPickup(deltaTime);
+			playButton->Update(deltaTime);
+			creditsButton->Update(deltaTime);
+			exitButton->Update(deltaTime);
 
-		enemy->Update(deltaTime);
-		SpawnEnemy(deltaTime);
-
-		CheckCollisions();
+			inputManager->Update(deltaTime);
+			ProcessInput(deltaTime);
+			break;
+		case GS_Credits:
+			creditsScreen->Update(deltaTime);
+			menuButton->SetActive(true);
+			menuButton->Update(deltaTime);
+			inputManager->Update(deltaTime);
+			ProcessInput(deltaTime);
+			break;
+		case GS_Running:
+			inputManager->Update(deltaTime);
+			ProcessInput(deltaTime);
+			CheckBoundries(player);
+			CheckBackground();
+			background->Update(deltaTime);
+			robotLeft->Update(deltaTime);
+			robotRight->Update(deltaTime);
+			robotLeftStrip->Update(deltaTime);
+			robotRightStrip->Update(deltaTime);
+			pauseButton->Update(deltaTime);
+			resumeButton->Update(deltaTime);
+			pickup->Update(deltaTime);
+			SpawnPickup(deltaTime);
+			enemy->Update(deltaTime);
+			SpawnEnemy(deltaTime);
+			CheckCollisions();
+			break;
+		case GS_NextLevel:
+			inputManager->Update(deltaTime);
+			ProcessInput(deltaTime);
+			break;
+		case GS_Paused:
+			inputManager->Update(deltaTime);
+			ProcessInput(deltaTime);
+			break;
+		case GS_GameOver:
+			inputManager->Update(deltaTime);
+			ProcessInput(deltaTime);
+			break;
 	}
 }
 
 void GameLoop(const float deltaTime)
 {
+	if (gameState == GameState::GS_Splash)
+	{
+		LoadTextures();
+		gameState = GameState::GS_Loading;
+	}
     Update(deltaTime);
     Render();
 }
