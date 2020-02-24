@@ -54,6 +54,13 @@ protected:
 	bool spriteSheet;
 	bool clicked;
 
+	Rect collision;
+
+	int value;
+
+	float radius;
+	Point center;
+
 public:
 
 	Sprite(const GLuint numberTextures);
@@ -98,5 +105,20 @@ public:
 	void Jump(SpriteState state);
 	void SetClicked(const bool value) { clicked = value; }
 	const bool GetClicked() const { return clicked; }
+
+	const Rect GetCollisionRect() const;
+	void SetCollisionRectOffset(const Rect rect) { collision = rect; }
+
+	const int GetValue() const { return value; }
+	void SetValue(const int value) { this->value = value; }
+
+	void SetRadius(const GLfloat radius) { this->radius = radius; }
+	const float GetRadius() const { return radius; }
+
+	void SetCenter(const Point center) { this->center = center; }
+	const Point GetCenter() const;
+	const bool IntersectsCircle(const Sprite* sprite) const;
+	const bool IntersectRect(const Sprite* sprite) const;
+
 }; 
 

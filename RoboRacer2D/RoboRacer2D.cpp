@@ -4,6 +4,8 @@
 #include "framework.h"
 #include "RoboRacer2D.h"
 #include <Windows.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include <gl\GL.h>
 #include <gl\GLU.h>
@@ -40,10 +42,17 @@ Sprite* player;
 Sprite* pauseButton;
 Sprite* resumeButton;
 
+Sprite* pickup;
+Sprite* enemy;
+
 Input* inputManager;
 
 float uiTimer;
 const float UI_THRESHOLD = .2f;
+float pickupSpawnThreshold;
+float pickupSpawnTimer;
+float enemySpawnThreshold;
+float enemySpawnTimer;
 
 enum GameState
 {
@@ -61,7 +70,6 @@ void ReSizeGLScene(const GLsizei width, const GLsizei height)
 	glOrtho(0, w, h, 0, 0, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-
 }
 
 const bool InitGL()
@@ -75,7 +83,10 @@ const bool InitGL()
 
 const bool LoadTextures()
 {
-    background = new Sprite(1);
+	Sprite::Point center;
+	float radius;
+
+	background = new Sprite(1);
     background->SetFrameSize(1877.0f, 600.0f);
     background->SetNumberOfFrames(1);
     background->AddTexture("resources/background.png", false);
@@ -123,8 +134,22 @@ const bool LoadTextures()
 	resumeButton->SetNumberOfFrames(1);
 	resumeButton->SetPosition(80.0f, 5.0f);
 	resumeButton->AddTexture("resources/resumeButton.png");
-	resumeButton->SetActive(false);
-	resumeButton->SetVisible(false);
+
+	pickup = new Sprite(1);
+	pickup->SetFrameSize(26.0f, 50.0f);
+	pickup->SetNumberOfFrames(1);
+	pickup->AddTexture("resources/oil.png");
+	pickup->SetVisible(false);
+	pickup->SetActive(false);
+	pickup->SetValue(50);
+
+	enemy = new Sprite(1);
+	enemy->SetFrameSize(32.0f, 50.0f);
+	enemy->SetNumberOfFrames(1);
+	enemy->AddTexture("resources/water.png");
+	enemy->SetVisible(false);
+	enemy->SetActive(false);
+	enemy->SetValue(-50);
 
 	inputManager->AddUIElement(resumeButton);
 	inputManager->AddUIElement(pauseButton);
@@ -132,7 +157,6 @@ const bool LoadTextures()
 	background->SetVisible(true);
 	background->SetActive(true);
 	
-
     robotRight->SetActive(true);
     robotRight->SetVisible(true);
     robotRight->SetVelocity(50.0f);
@@ -141,6 +165,35 @@ const bool LoadTextures()
 	player->SetActive(true);
     player->SetVisible(true);
     
+	Sprite::Rect collision;
+	collision.left = 34.0f;
+	collision.right = -10.0f;
+	collision.top = 0.0f;
+	collision.bottom = 0.0f;
+	robotLeft->SetCollisionRectOffset(collision);
+	robotRight->SetCollisionRectOffset(collision);
+	
+	center.x = robotRight->GetSize().width / 2.0f;
+	center.y = robotRight->GetSize().height / 2.0f;
+	radius = (center.x + center.y) / 2.0f;
+
+	robotRight->SetCenter(center);
+	robotRight->SetRadius(radius);
+	robotLeft->SetCenter(center);
+	robotLeft->SetRadius(radius);
+
+	center.x = pickup->GetSize().width / 2.0f;
+	float yOffset = (pickup->GetSize().height / 4.0f) * 3.0f;
+	center.y = yOffset;
+	pickup->SetCenter(center);
+	radius = pickup->GetSize().width / 2.0f;
+	pickup->SetRadius(radius);
+
+	robotLeft->SetCollideable(true);
+	robotRight->SetCollideable(true);
+	pickup->SetCollideable(true);
+	enemy->SetCollideable(true);
+
     return true;
 }
 
@@ -156,8 +209,46 @@ void Render()
     robotRightStrip->Render();
 	pauseButton->Render();
 	resumeButton->Render();
-
+	pickup->Render();
+	enemy->Render();
     SwapBuffers(hDC);
+}
+
+void SpawnPickup(float deltaTime)
+{
+	if (pickup->GetVisible() == false)
+	{
+		pickupSpawnTimer += deltaTime;
+		if (pickupSpawnTimer > pickupSpawnThreshold)
+		{
+			float marginX = pickup->GetSize().width;
+			float marginY = pickup->GetSize().height;
+			float spawnX = (rand() % (int)(screenWidth - (marginX * 2))) + marginX;
+			float spawnY = screenHeight - ((rand() % (int)(player -> GetSize().height - (marginY * 1.5))) + marginY);
+			pickup->SetPosition(spawnX, spawnY);
+			pickup->SetVisible(true);
+			pickup->SetActive(true);
+			pickupSpawnTimer = 0.0f;
+		}
+	}
+}
+
+void SpawnEnemy(float deltaTime)
+{
+	if (enemy->GetVisible() == false)
+	{
+		enemySpawnTimer += deltaTime;
+		if (enemySpawnTimer > enemySpawnThreshold)
+		{
+			float marginX = enemy->GetSize().width;
+			float marginY = enemy->GetSize().height;
+			float spawnX = (rand() % (int)(screenWidth - (marginX * 2))) + marginX;
+			float spawnY = screenHeight - ((rand() % (int)(player->GetSize().height - (marginY * 1.5))) + marginY);
+			enemy->SetPosition(spawnX, spawnY);
+			enemy->SetVisible(true);
+			enemy->SetActive(true);
+		}
+	}
 }
 
 void StartGame()
@@ -166,6 +257,93 @@ void StartGame()
 	uiTimer = .0f;
     inputManager = new Input(hWnd);
     LoadTextures();
+	srand(time(NULL));
+	pickupSpawnThreshold  = 15.0f;
+	pickupSpawnTimer = 0.0f;
+	enemySpawnThreshold = 7.0f;
+	enemySpawnTimer = 0.0f;
+}
+
+void CheckCollisions()
+{
+	if (player->IntersectsCircle(pickup))
+	{
+		pickup->SetVisible(false);
+		pickup->SetActive(false);
+		player->SetValue(player->GetValue() + pickup->GetValue());
+		pickupSpawnThreshold = 0.0f;
+	}
+
+	if (player->IntersectRect(enemy))
+	{
+		enemy->SetVisible(false);
+		enemy->SetActive(false);
+		player->SetValue(player->GetValue() + enemy->GetValue());
+		enemySpawnTimer = 0.0f;
+	}
+
+}
+
+void CheckBackground()
+{
+	float leftThreshold = 0.0f;
+	float rightThreshold = -(background->GetSize().width - screenWidth);
+	if (background->GetPosition().x > 0)
+	{
+		background->SetPosition(0.0f, background->GetPosition().y);
+	}
+	else if (background->GetPosition().x < rightThreshold)
+	{
+		background->SetPosition(rightThreshold, background -> GetPosition().y);
+	}
+}
+
+void CheckBoundries(Sprite* sprite)
+{
+	Sprite::Rect check = sprite->GetCollisionRect();
+	float offset;
+	float x;
+	float y;
+	if (check.left < 0.0f)
+	{
+		sprite->SetVelocity(.0f);
+		offset = check.left;
+		x = sprite->GetPosition().x - offset;
+		y = sprite->GetPosition().y;
+		sprite->SetPosition(x, y);
+	}
+	else
+	{
+		if (check.right > screenWidth)
+		{
+			sprite->SetVelocity(.0f);
+			offset = screenWidth - check.right;
+			x = sprite->GetPosition().x + offset;
+			y = sprite->GetPosition().y;
+			sprite->SetPosition(x, y);
+		}
+	}
+
+	if (check.top < 0.0f)
+	{
+		sprite->SetVelocity(.0f);
+		offset = check.top;
+		x = sprite->GetPosition().y - offset;
+		y = sprite->GetPosition().x;
+		sprite->SetPosition(x, y);
+	}
+	else
+	{
+		if (check.bottom > screenHeight)
+		{
+			sprite->SetVelocity(.0f);
+			offset = screenHeight - check.bottom;
+			x = sprite->GetPosition().y + offset;
+			y = sprite->GetPosition().x;
+			sprite->SetPosition(x, y);
+		}
+	}
+
 }
 
 void ProcessInput(const float deltaTime)
@@ -194,7 +372,7 @@ void ProcessInput(const float deltaTime)
 				{
 					robotRight->SetActive(false);
 					robotRight->SetVisible(false);
-					robotRight->SetPosition(robotRight->GetPosition());
+					robotLeft->SetPosition(robotRight->GetPosition());
 				}
 
 				player = robotLeft;
@@ -209,7 +387,7 @@ void ProcessInput(const float deltaTime)
 				{
 					robotLeft->SetActive(false);
 					robotLeft->SetVisible(false);
-					robotLeft->SetPosition(robotLeft->GetPosition());
+					robotRight->SetPosition(robotLeft->GetPosition());
 				}
 
 				player = robotRight;
@@ -261,6 +439,8 @@ void Update(const float deltaTime)
 {
     inputManager->Update(deltaTime);
     ProcessInput(deltaTime);
+	CheckBoundries(player);
+	CheckBackground();
 	if (gameState == GS_Runnig)
 	{
 		background->Update(deltaTime);
@@ -271,6 +451,14 @@ void Update(const float deltaTime)
 
 		pauseButton->Update(deltaTime);
 		resumeButton->Update(deltaTime);
+
+		pickup->Update(deltaTime);
+		SpawnPickup(deltaTime);
+
+		enemy->Update(deltaTime);
+		SpawnEnemy(deltaTime);
+
+		CheckCollisions();
 	}
 }
 

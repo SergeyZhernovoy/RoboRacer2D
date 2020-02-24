@@ -22,6 +22,11 @@ Sprite::Sprite(const GLuint numberTextures)
 	spriteSheet = false;
 	transparency = true;
 	clicked = false;
+	collision.left = .0f;
+	collision.right = .0f;
+	collision.top = .0f;
+	collision.bottom = .0f;
+	value = 0;
 }
 
 Sprite::~Sprite()
@@ -39,13 +44,11 @@ void Sprite::Update(const float deltaTime)
 
 		if (elapsed >= delay)
 		{
-			currentFrame++;
-
-			if (currentFrame >= numberFrames)
+			if (++currentFrame >= numberFrames)
 				currentFrame = 0;
 			elapsed = 0.0f;
 		}
-		position.x = position.x + velocity * dt;
+		position.x += velocity * dt;
 	}
 }
 
@@ -149,9 +152,96 @@ void Sprite::Jump(SpriteState state)
 
 }
 
+const Sprite::Rect Sprite::GetCollisionRect() const
+{
+	Rect rect;
+	rect.left = position.x + collision.left;
+	rect.right = position.x + collision.right + size.width;
+	rect.top = position.y + collision.top;
+	rect.bottom = position.y + collision.top + size.height;
+	return rect;
+}
 
+const Sprite::Point Sprite::GetCenter() const
+{
+	Point point;
+	point.x = this->GetPosition().x + center.x;
+	point.y = this->GetPosition().y + center.y;
+	return point;
+}
 
+const bool Sprite::IntersectsCircle(const Sprite* sprite) const
+{
+	if (this->GetCollideable() && sprite->GetCollideable() && this -> GetActive() && sprite->GetActive())
+	{
+		const Point p1 = this->GetCenter();
+		const Point p2 = sprite->GetCenter();
+		float y = p2.y - p1.y;
+		float x = p2.x - p1.x;
+		float d = x * x + y * y;
+		float r1 = this->GetRadius() * this->GetRadius();
+		float r2 = sprite->GetRadius() * sprite->GetRadius();
+		if (d <= r1 + r2)
+		{
+			return true;
+		}
+	}
+	return false;
+}
 
+const bool Sprite::IntersectRect(const Sprite* sprite) const
+{
+	if (this->GetCollideable() && sprite->GetCollideable() && this -> GetActive() && sprite->GetActive())
+	{
+		const Rect recta = this->GetCollisionRect();
+		const Rect rectb = sprite->GetCollisionRect();
+		if (recta.left >= rectb.left && recta.left <= rectb.right && recta.top >= rectb.top && recta.top <= rectb.bottom)
+		{
+			return true;
+		}
+		else 
+			if (recta.right >= rectb.left && recta.right <= rectb.right && recta.top >= rectb.top && recta.top <= rectb.bottom)
+			{
+				return true;
+			}
+			else 
+				if (recta.left >= rectb.left && recta.right <= rectb.right && recta.top < rectb.top && recta.bottom > rectb.bottom)
+				{
+					return true;
+				}
+				else 
+					if (recta.top >= rectb.top && recta.bottom <= rectb.bottom && recta.left < rectb.left && recta.right > rectb.right)
+					{
+						return true;
+					}
+					else 
+						if (rectb.left >= recta.left && rectb.left <= recta.right && rectb.top >= recta.top && rectb.top <= recta.bottom)
+						{
+							return true;
+						}
+						else 
+							if (rectb.right >= recta.left && rectb.right <= recta.right && rectb.top >= recta.top && rectb.top <= recta.bottom)
+							{
+								return true;
+							}
+							else 
+								if (rectb.left >= recta.left && rectb.right <= recta.right && rectb.top < recta.top && rectb.bottom > recta.bottom)
+								{
+									return true;
+								}
+								else 
+									if (recta.top >= rectb.top && recta.bottom <= rectb.bottom && recta.left < rectb.left && recta.right > rectb.right)
+									{
+										return true;
+									}
+									else 
+										if (rectb.top >= recta.top && rectb.bottom <= recta.bottom && rectb.left < recta.left && rectb.right > recta.right)
+										{
+											return true;
+										}
+	}
+	return false;
+}
 
 
 
