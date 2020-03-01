@@ -11,6 +11,7 @@
 #include <gl\GL.h>
 #include <gl\GLU.h>
 #include "glut.h"
+#include "fmod.hpp"
 
 #include "Sprite.h"
 #include "Input.h"
@@ -29,6 +30,8 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 HDC hDC = NULL;
 HGLRC hRC = NULL;
 HWND hWnd = NULL;
+
+FMOD::System* audiomgr;
 
 bool fullscreen = false;
 GLfloat screenHeight;
@@ -60,6 +63,14 @@ Sprite* gameOverScreen;
 
 Input* inputManager;
 
+FMOD::Sound* sfxWater;
+FMOD::Sound* sfxOilcan;
+FMOD::Sound* sfxJump;
+FMOD::Sound* sfxMovement;
+FMOD::Channel* chMovement;
+FMOD::Sound* sfxButton;
+FMOD::Sound* musBackground;
+
 float uiTimer;
 const float UI_THRESHOLD = .2f;
 float pickupSpawnThreshold;
@@ -89,6 +100,39 @@ enum GameState
 	GS_Paused,
 	GS_GameOver
 } gameState;
+
+bool InitFmod()
+{
+	FMOD_RESULT result;
+	result = FMOD::System_Create(&audiomgr);
+
+	if (result != FMOD_OK)
+	{
+		return false;
+	}
+	result = audiomgr->init(50, FMOD_INIT_NORMAL, NULL);
+
+	if (result != FMOD_OK)
+	{
+		return false;
+	}
+	return true;
+}
+
+const bool LoadAudio()
+{
+	FMOD_RESULT result;
+	FMOD::Channel* channel;
+	result = audiomgr->createSound("resources/oil.wav", FMOD_DEFAULT, 0, &sfxOilcan);
+	result = audiomgr->createSound("resources/water.wav", FMOD_DEFAULT, 0, &sfxWater);
+	result = audiomgr->createSound("resources/jump.wav", FMOD_DEFAULT,	0, &sfxJump);
+	result = audiomgr->createSound("resources/movement.wav", FMOD_LOOP_NORMAL | FMOD_2D | FMOD_DEFAULT, 0, &sfxMovement);
+	result = audiomgr->createSound("resources/button.wav", FMOD_DEFAULT, 0, &sfxButton);
+	result = audiomgr->createSound("resources/jollybot.mp3", FMOD_LOOP_NORMAL | FMOD_2D | FMOD_DEFAULT, 0, &musBackground);
+	result = audiomgr->playSound(sfxMovement, FMOD_DEFAULT, true, &chMovement);
+	result = audiomgr->playSound(musBackground, FMOD_DEFAULT, true, &channel);
+	return true;
+}
 
 GLvoid BuildFont(GLvoid)
 {
@@ -544,6 +588,8 @@ void CheckCollisions()
 {
 	if (player->IntersectsCircle(pickup))
 	{
+		FMOD::Channel* channel;
+		audiomgr->playSound(sfxOilcan, FMOD_DEFAULT, false, &channel);
 		pickup->SetVisible(false);
 		pickup->SetActive(false);
 		player->SetValue(player->GetValue() + pickup->GetValue());
@@ -553,6 +599,8 @@ void CheckCollisions()
 
 	if (player->IntersectRect(enemy))
 	{
+		FMOD::Channel* channel;
+		audiomgr->playSound(sfxWater, FMOD_DEFAULT, false, &channel);
 		enemy->SetVisible(false);
 		enemy->SetActive(false);
 		player->SetValue(player->GetValue() + enemy->GetValue());
@@ -626,7 +674,7 @@ void CheckBoundries(Sprite* sprite)
 void ProcessInput(const float deltaTime)
 {
 	Input::Command command = inputManager->GetCommand();
-
+	FMOD::Channel* channel;
 	switch (gameState)
 	{
 		case GameState::GS_Splash:
@@ -653,6 +701,7 @@ void ProcessInput(const float deltaTime)
 			case Input::Command::CM_STOP:
 				player->SetVelocity(0.0f);
 				background->SetVelocity(0.0f);
+				chMovement->setPaused(true);
 				break;
 
 			case Input::Command::CM_LEFT:
@@ -662,6 +711,7 @@ void ProcessInput(const float deltaTime)
 					robotRight->SetActive(false);
 					robotRight->SetVisible(false);
 					robotLeft->SetPosition(robotRight->GetPosition());
+					robotLeft->SetValue(robotRight->GetValue());
 				}
 
 				player = robotLeft;
@@ -669,6 +719,7 @@ void ProcessInput(const float deltaTime)
 				player->SetVisible(true);
 				player->SetVelocity(-50.0f);
 				background->SetVelocity(50.0f);
+				chMovement->setPaused(false);
 				break;
 
 			case Input::Command::CM_RIGHT:
@@ -677,6 +728,7 @@ void ProcessInput(const float deltaTime)
 					robotLeft->SetActive(false);
 					robotLeft->SetVisible(false);
 					robotRight->SetPosition(robotLeft->GetPosition());
+					robotRight->SetValue(robotLeft->GetValue());
 				}
 
 				player = robotRight;
@@ -684,23 +736,25 @@ void ProcessInput(const float deltaTime)
 				player->SetVisible(true);
 				player->SetVelocity(50.0f);
 				background->SetVelocity(-50.0f);
+				chMovement->setPaused(false);
 				break;
 
 			case Input::Command::CM_UP:
+				audiomgr->playSound(sfxJump, FMOD_DEFAULT, false, &channel);
 				player->Jump(Sprite::SpriteState::UP);
 				break;
-
 			case Input::Command::CM_DOWN:
+				audiomgr->playSound(sfxJump, FMOD_DEFAULT, false, &channel);
 				player->Jump(Sprite::SpriteState::DOWN);
 				break;
-
 			case Input::Command::CM_QUIT:
 				PostQuitMessage(0);
 				break;
 			case Input::Command::CM_UI:
-
+				FMOD::Channel* channel;
 				if (pauseButton->GetClicked())
 				{
+					audiomgr->playSound(sfxButton, FMOD_DEFAULT, false, &channel);
 					pauseButton->SetClicked(false);
 					pauseButton->SetVisible(false);
 					pauseButton->SetActive(false);
@@ -712,6 +766,7 @@ void ProcessInput(const float deltaTime)
 
 				if (resumeButton->GetClicked())
 				{
+					audiomgr->playSound(sfxButton, FMOD_DEFAULT, false, &channel);
 					resumeButton->SetClicked(false);
 					resumeButton->SetVisible(false);
 					resumeButton->SetActive(false);
@@ -722,6 +777,7 @@ void ProcessInput(const float deltaTime)
 
 				if (playButton->GetClicked())
 				{
+					audiomgr->playSound(sfxButton, FMOD_DEFAULT, false, &channel);
 					playButton->SetClicked(false);
 					exitButton->SetActive(false);
 					playButton->SetActive(false);
@@ -731,6 +787,7 @@ void ProcessInput(const float deltaTime)
 
 				if (creditsButton->GetClicked())
 				{
+					audiomgr->playSound(sfxButton, FMOD_DEFAULT, false, &channel);
 					creditsButton->SetClicked(false);
 					exitButton->SetActive(false);
 					playButton->SetActive(false);
@@ -740,6 +797,7 @@ void ProcessInput(const float deltaTime)
 
 				if (exitButton->GetClicked())
 				{
+					audiomgr->playSound(sfxButton, FMOD_DEFAULT, false, &channel);
 					playButton->SetClicked(false);
 					exitButton->SetActive(false);
 					playButton->SetActive(false);
@@ -749,6 +807,7 @@ void ProcessInput(const float deltaTime)
 
 				if (menuButton->GetClicked())
 				{
+					audiomgr->playSound(sfxButton, FMOD_DEFAULT, false, &channel);
 					menuButton->SetClicked(false);
 					menuButton->SetActive(false);
 					gameState = GameState::GS_Menu;
@@ -756,6 +815,7 @@ void ProcessInput(const float deltaTime)
 
 				if (continueButton->GetClicked())
 				{
+					audiomgr->playSound(sfxButton, FMOD_DEFAULT, false, &channel);
 					continueButton->SetClicked(false);
 					continueButton->SetActive(false);
 					gameState = GameState::GS_Running;
@@ -765,6 +825,7 @@ void ProcessInput(const float deltaTime)
 
 				if (replayButton->GetClicked())
 				{
+					audiomgr->playSound(sfxButton, FMOD_DEFAULT, false, &channel);
 					replayButton->SetClicked(false);
 					replayButton->SetActive(false);
 					exitButton->SetActive(false);
@@ -862,6 +923,8 @@ void GameLoop(const float deltaTime)
 {
 	if (gameState == GameState::GS_Splash)
 	{
+		InitFmod();
+		LoadAudio();
 		BuildFont();
 		LoadTextures();
 		gameState = GameState::GS_Loading;
@@ -871,7 +934,39 @@ void GameLoop(const float deltaTime)
 }
 
 void EndGame()
-{}
+{
+	delete robotLeft;
+	delete robotRight;
+	delete robotRightStrip;
+	delete robotLeftStrip;
+	delete background;
+	delete pickup;
+	delete enemy;
+	delete pauseButton;
+	delete resumeButton;
+	delete splashScreen;
+	delete menuScreen;
+	delete creditsScreen;
+	delete playButton;
+	delete creditsButton;
+	delete exitButton;
+	delete menuButton;
+	delete nextLevelScreen;
+	delete continueButton;
+	delete gameOverScreen;
+	delete replayButton;
+	delete inputManager;
+
+	KillFont();
+
+	sfxWater->release();
+	sfxOilcan->release();
+	sfxJump->release();
+	sfxMovement->release();
+	sfxButton->release();
+	musBackground->release();
+	audiomgr->release();
+}
 
 const bool CreateGLWindow(const char* p_title, const int p_width, const int p_height, const int p_bits, const bool p_fullscreenflag)
 {

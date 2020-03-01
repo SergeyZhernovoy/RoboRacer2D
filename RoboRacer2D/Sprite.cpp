@@ -31,7 +31,12 @@ Sprite::Sprite(const GLuint numberTextures)
 
 Sprite::~Sprite()
 {
+	for (int i = 0; i < textureIndex; i++)
+	{
+		glDeleteTextures(1, &textures[i]);
+	}
 	delete[] textures;
+	textures = NULL;
 }
 
 void Sprite::Update(const float deltaTime)
