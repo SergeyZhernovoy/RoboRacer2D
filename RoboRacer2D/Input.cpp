@@ -9,7 +9,10 @@ Input::Input(const HWND hWnd)
 }
 
 Input::~Input()
-{}
+{
+	delete[] uiElements;
+	uiElements = NULL;
+}
 
 void Input::Update(const float deltaTime)
 {
